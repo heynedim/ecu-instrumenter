@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import pygame
+from ui.screens.base import BaseScreen
 from core.state import global_state, AppScreen
+from ui.input_map import ACTION_X, UP, DOWN
 
 DTC_DB = {
     "P0171": "System Too Lean (Bank 1)",
@@ -10,63 +12,68 @@ DTC_DB = {
     "P0442": "Evaporative Emission System Leak Detected (small leak)",
     "P0141": "O2 Sensor Heater Circuit (Bank 1 Sensor 2)",
     "P0113": "Intake Air Temperature Sensor 1 Circuit High",
-    "P0102": "Mass or Volume Air Flow Circuit Low Input"
+    "P0102": "Mass or Volume Air Flow Circuit Low Input",
 }
 
-class ErrorsScreen:
+
+class ErrorsScreen(BaseScreen):
     def __init__(self, fonts):
-        self.fonts = fonts
+        super(ErrorsScreen, self).__init__(fonts)
         self.scroll_y = 0
-        
-    def draw(self, surface):
+
+    def draw(self, surface, fps=0):
         from config import settings as C
         from ui.panels import draw_top_bar, draw_tab_bar
-        
+
         surface.fill(C.BG)
-        # Top bar
         draw_top_bar(surface, "ENGINE ERROR CODES", "", False, self.fonts)
-        
-        hint = "[X] to Clear Faults"
+
+        hint = "[X] Clear Faults"
         hint_surf = self.fonts.unit.render(hint, True, C.DIM)
         surface.blit(hint_surf, (C.WIDTH // 2 - hint_surf.get_width() // 2, 50))
-        
+
         dtcs = getattr(global_state.telemetry, 'dtcs', [])
         y = 75 - self.scroll_y
-        
+
         if not dtcs:
             msg = self.fonts.value.render("NO FAULT CODES DETECTED", True, C.GREEN)
-            surface.blit(msg, (C.WIDTH // 2 - msg.get_width() // 2, C.HEIGHT // 2 - msg.get_height() // 2))
+            surface.blit(msg, (C.WIDTH // 2 - msg.get_width() // 2,
+                               C.HEIGHT // 2 - msg.get_height() // 2))
         else:
             for code in dtcs:
-                desc = DTC_DB.get(code, "Unknown Engine Code")
+                desc   = DTC_DB.get(code, "Unknown Engine Code")
                 c_surf = self.fonts.label.render(code, True, C.RED)
                 d_surf = self.fonts.unit.render(desc, True, C.WHITE)
-                
-                # Draw box
-                pygame.draw.rect(surface, C.PANEL, (C.PAD, y, C.WIDTH - C.PAD*2, 60))
-                pygame.draw.rect(surface, C.BORDER, (C.PAD, y, C.WIDTH - C.PAD*2, 60), 1)
-                
+
+                pygame.draw.rect(surface, C.PANEL,  (C.PAD, y, C.WIDTH - C.PAD * 2, 60))
+                pygame.draw.rect(surface, C.BORDER, (C.PAD, y, C.WIDTH - C.PAD * 2, 60), 1)
                 surface.blit(c_surf, (C.PAD + 15, y + 15))
                 surface.blit(d_surf, (C.PAD + 15, y + 35))
                 y += 70
 
-        # Bottom tab bar
-        draw_tab_bar(surface, 2, self.fonts) # Dashboard: 0, Logs: 1, Errors: 2, Settings: 3
+        draw_tab_bar(surface, 2, self.fonts)
 
     def handle_event(self, event):
-        if event.type == pygame.KEYDOWN:
-            if event.key in (pygame.K_ESCAPE, pygame.K_b, pygame.K_LALT):
-                global_state.screen = AppScreen.DASHBOARD
-            elif event.key == pygame.K_LEFT:
-                global_state.screen = AppScreen.LOG
-            elif event.key == pygame.K_RIGHT:
-                global_state.screen = AppScreen.SETTINGS
-            elif event.key == pygame.K_UP:
-                self.scroll_y = max(0, self.scroll_y - 30)
-            elif event.key == pygame.K_DOWN:
-                dtcs = getattr(global_state.telemetry, 'dtcs', [])
-                max_scroll = max(0, len(dtcs) * 70 - 250)
-                self.scroll_y = min(max_scroll, self.scroll_y + 30)
-            elif event.key in (pygame.K_x, pygame.K_LSHIFT, pygame.K_c):
-                global_state.telemetry.dtcs = []
-                self.scroll_y = 0
+        """Handles fault-clear and scroll only.
+        Tab switching (Left/Right, L/R shoulder) is delegated to app.py."""
+        if event.type != pygame.KEYDOWN:
+            return False
+
+        key = event.key
+
+        if key in ACTION_X:            # X = clear faults
+            global_state.telemetry.dtcs = []
+            self.scroll_y = 0
+            return True
+
+        if key in UP:
+            self.scroll_y = max(0, self.scroll_y - 30)
+            return True
+
+        if key in DOWN:
+            dtcs       = getattr(global_state.telemetry, 'dtcs', [])
+            max_scroll = max(0, len(dtcs) * 70 - 250)
+            self.scroll_y = min(max_scroll, self.scroll_y + 30)
+            return True
+
+        return False
