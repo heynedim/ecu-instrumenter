@@ -4,11 +4,8 @@ ECU Instrumenter is a lightweight telemetry dashboard designed for the Miyoo Min
 
 ## Screenshots
 
-| Dashboard | System Logs |
-|:---:|:---:|
-| ![Dashboard](assets/ECUInstrumenter_000.png) | ![Logs](assets/ECUInstrumenter_001.png) |
-| **Fault Codes** | **Settings** |
-| ![Errors](assets/ECUInstrumenter_002.png) | ![Settings](assets/ECUInstrumenter_003.png) |
+<img src="assets/ECUInstrumenter_000.png" width="49.5%"> <img src="assets/ECUInstrumenter_001.png" width="49.5%">
+<img src="assets/ECUInstrumenter_002.png" width="49.5%"> <img src="assets/ECUInstrumenter_003.png" width="49.5%">
 
 ---
 
