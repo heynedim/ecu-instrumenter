@@ -54,6 +54,15 @@ bool packetPaused = false;
 unsigned int bootStart = 0;
 unsigned int lastTelemetry = 0;
 unsigned int frame = 0;
+AppConfig appConfig = {"127.0.0.1", 35000, 900, 120, true};
+ObdLinkState obdState = OBD_DISCONNECTED;
+std::string obdStatusText = "NO SIGNAL";
+std::string obdFaultText = "NONE";
+std::string obdLastPid = "----";
+std::string obdLastResponse = "----";
+int obdLastLatency = 0;
+unsigned int obdLastRx = 0;
+ObdBootCheck obdBootCheck = {false, false, false, false, 0};
 Telemetry tel;
 std::vector<int> rpmHist;
 std::vector<int> latencyHist;
@@ -170,9 +179,9 @@ void graph(int x, int y, int w, int h, const std::vector<int> &v, int lo, int hi
     rect(lastX - 2, lastY - 2, 5, 5, c, true);
     char buf[48];
     if (divisor > 1) {
-        std::snprintf(buf, sizeof(buf), "NOW %02d.%d%s", v.back() / divisor, v.back() % divisor, unit);
+        std::snprintf(buf, sizeof(buf), "%02d.%d%s", v.back() / divisor, v.back() % divisor, unit);
     } else {
-        std::snprintf(buf, sizeof(buf), "NOW %03d%s", v.back(), unit);
+        std::snprintf(buf, sizeof(buf), "%03d%s", v.back(), unit);
     }
     text(x + 7, y + 6, buf, c, 1);
     if (divisor > 1) {
@@ -185,7 +194,10 @@ void graph(int x, int y, int w, int h, const std::vector<int> &v, int lo, int hi
 
 void graphBars(int x, int y, int w, int h, const std::vector<int> &v, int lo, int hi, Color c) {
     rect(x, y, w, h, LINE, false);
-    for (int gy = y + 12; gy < y + h; gy += 12) line(x, gy, x + w, gy, Color{12, 26, 22, 160});
+    int plotTop = y + 18;
+    int plotBottom = y + h - 6;
+    int plotH = std::max(8, plotBottom - plotTop);
+    for (int gy = plotTop + 10; gy < plotBottom; gy += 10) line(x, gy, x + w, gy, Color{12, 26, 22, 160});
     if (v.empty() || hi <= lo) {
         text(x + 8, y + h / 2 - 4, "NO SAMPLE", MUTED, 1);
         return;
@@ -195,12 +207,12 @@ void graphBars(int x, int y, int w, int h, const std::vector<int> &v, int lo, in
     int barW = std::max(2, (w - 12) / std::max(1, count));
     for (int i = 0; i < count; ++i) {
         int value = std::max(lo, std::min(hi, v[(size_t)(start + i)]));
-        int bh = 2 + ((value - lo) * (h - 14)) / (hi - lo);
+        int bh = 2 + ((value - lo) * (plotH - 2)) / (hi - lo);
         int bx = x + 6 + i * barW;
-        rect(bx, y + h - 6 - bh, std::max(1, barW - 1), bh, c, true);
+        rect(bx, plotBottom - bh, std::max(1, barW - 1), bh, c, true);
     }
     char buf[48];
-    std::snprintf(buf, sizeof(buf), "LAST %03dMS", v.back());
+    std::snprintf(buf, sizeof(buf), "%03dMS  TOP %03d", v.back(), hi);
     text(x + 7, y + 6, buf, c, 1);
 }
 

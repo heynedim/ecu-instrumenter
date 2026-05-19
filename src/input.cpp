@@ -4,7 +4,8 @@ void enterMenu() {
     if (menuIndex == 0) screenId = SCREEN_LIVE;
     else if (menuIndex == 1) screenId = SCREEN_FAULTS;
     else if (menuIndex == 2) screenId = SCREEN_PACKET;
-    else screenId = SCREEN_SYSTEM;
+    else if (menuIndex == 3) screenId = SCREEN_SYSTEM;
+    else running = false;
 }
 
 void action(SDL_Keycode key) {
@@ -20,10 +21,9 @@ void action(SDL_Keycode key) {
     else if (start) overlay = !overlay;
     else if (select) screenId = SCREEN_PACKET;
     else if (screenId == SCREEN_MENU) {
-        if (up) menuIndex = (menuIndex + 3) % 4;
-        else if (down) menuIndex = (menuIndex + 1) % 4;
+        if (up) menuIndex = (menuIndex + 4) % 5;
+        else if (down) menuIndex = (menuIndex + 1) % 5;
         else if (a || key == SDLK_RIGHT) enterMenu();
-        else if (b) running = false;
     } else {
         if (b) screenId = SCREEN_MENU;
         if (screenId == SCREEN_FAULTS && up && !dtcs.empty()) {

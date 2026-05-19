@@ -13,6 +13,21 @@ const size_t MAX_HISTORY = 96;
 const size_t MAX_PACKETS = 120;
 const int PACKET_ROWS = 18;
 
+struct AppConfig {
+    std::string obdHost;
+    int obdPort;
+    int connectTimeoutMs;
+    int pollIntervalMs;
+    bool fallbackSim;
+};
+
+enum ObdLinkState {
+    OBD_DISCONNECTED,
+    OBD_CONNECTING,
+    OBD_ONLINE,
+    OBD_FALLBACK
+};
+
 struct Color {
     Uint8 r, g, b, a;
 };
@@ -28,6 +43,14 @@ struct Telemetry {
     float stft;
     float ltft;
     int latency;
+};
+
+struct ObdBootCheck {
+    bool adapterLinked;
+    bool busActivity;
+    bool responseWindow;
+    bool mode01Session;
+    int validStreak;
 };
 
 struct Packet {
@@ -66,6 +89,15 @@ extern bool packetPaused;
 extern unsigned int bootStart;
 extern unsigned int lastTelemetry;
 extern unsigned int frame;
+extern AppConfig appConfig;
+extern ObdLinkState obdState;
+extern std::string obdStatusText;
+extern std::string obdFaultText;
+extern std::string obdLastPid;
+extern std::string obdLastResponse;
+extern int obdLastLatency;
+extern unsigned int obdLastRx;
+extern ObdBootCheck obdBootCheck;
 extern Telemetry tel;
 extern std::vector<int> rpmHist;
 extern std::vector<int> latencyHist;
@@ -101,6 +133,10 @@ void graph(int x, int y, int w, int h, const std::vector<int> &v, int lo, int hi
 void graphBars(int x, int y, int w, int h, const std::vector<int> &v, int lo, int hi, Color c);
 void frameShell(const std::string &title, const std::string &right);
 void panel(int x, int y, int w, int h, const std::string &label, Color c);
+void loadConfig(const char *path);
+void initObdClient();
+void shutdownObdClient();
+bool pollObdClient(unsigned int now);
 void updateTelemetry(unsigned int now);
 void drawBoot(unsigned int now);
 void drawMenu(unsigned int now);

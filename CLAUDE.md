@@ -17,6 +17,9 @@ This project is native C++/SDL2 only. Do not reintroduce the old Python/PyGame a
 make check
 make run
 make clean
+make run-server
+make run-dev
+make probe-obd
 make deploy
 make deploy MIYOO_IP=x.x.x.x
 ```
@@ -45,12 +48,17 @@ Before deploy, `make check` must pass.
 |:---|:---|
 | `src/main.cpp` | SDL2 entry point and loop |
 | `src/app_state.cpp` | Globals, drawing primitives, font/data tables |
+| `src/config.cpp` | Runtime `ecu_config.ini` parser |
+| `src/obd_client.cpp` | Non-blocking TCP OBD client |
 | `src/render.cpp` | Screens and HUD rendering |
 | `src/telemetry.cpp` | Simulated OBD/packet generation and export |
 | `src/input.cpp` | Input handling and navigation |
+| `tools/obd_sim_server.cpp` | Desktop OBD simulator server |
+| `tools/obd_probe.cpp` | Command-line OBD endpoint health check |
 | `Makefile` | Native build, run, clean, and deploy commands |
 | `launch.sh` | OnionOS launcher |
 | `config.json` | OnionOS app metadata |
+| `ecu_config.ini` | User-editable OBD connection settings |
 | `assets/icon.png` | OnionOS app icon |
 
 ## Controls

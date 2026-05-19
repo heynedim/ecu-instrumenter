@@ -15,11 +15,14 @@ void pushLimited(std::vector<T> &items, const T &item, size_t limit) {
     if (items.size() > limit) items.erase(items.begin());
 }
 
-} // namespace
+void pushTelemetryHistory() {
+    pushLimited(rpmHist, tel.rpm, MAX_HISTORY);
+    pushLimited(latencyHist, tel.latency, MAX_HISTORY);
+    pushLimited(coolantHist, tel.coolant, MAX_HISTORY);
+    pushLimited(voltageHist, (int)(tel.voltage * 10.0f + 0.5f), MAX_HISTORY);
+}
 
-void updateTelemetry(unsigned int now) {
-    if (now - lastTelemetry < 86) return;
-    lastTelemetry = now;
+void updateSimTelemetry(unsigned int now) {
     double t = now / 1000.0;
     tel.rpm = 850 + (int)(std::fabs(std::sin(t * 0.9)) * 2650.0) + (std::rand() % 55);
     tel.speed = (int)(std::fabs(std::sin(t * 0.31)) * 74.0);
@@ -31,10 +34,23 @@ void updateTelemetry(unsigned int now) {
     tel.stft = (float)(std::sin(t * 0.41) * 5.2);
     tel.ltft = (float)(std::cos(t * 0.27) * 2.4);
     tel.latency = 11 + (int)(std::fabs(std::sin(t * 2.1)) * 18.0) + (std::rand() % 4);
-    pushLimited(rpmHist, tel.rpm, MAX_HISTORY);
-    pushLimited(latencyHist, tel.latency, MAX_HISTORY);
-    pushLimited(coolantHist, tel.coolant, MAX_HISTORY);
-    pushLimited(voltageHist, (int)(tel.voltage * 10.0f + 0.5f), MAX_HISTORY);
+}
+
+} // namespace
+
+void updateTelemetry(unsigned int now) {
+    if (now - lastTelemetry < (unsigned int)appConfig.pollIntervalMs) return;
+    lastTelemetry = now;
+
+    if (pollObdClient(now)) {
+        pushTelemetryHistory();
+        return;
+    }
+
+    if (obdState == OBD_ONLINE || !appConfig.fallbackSim) return;
+
+    updateSimTelemetry(now);
+    pushTelemetryHistory();
 
     const char *pids[] = {"010C", "010D", "0105", "010F", "0111", "0142", "0104"};
     int idx = (int)(packetSeq % 7);
