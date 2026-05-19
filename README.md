@@ -1,99 +1,58 @@
 # ECU Instrumenter
 
-ECU Instrumenter is a lightweight telemetry dashboard designed for the Miyoo Mini Plus running OnionOS. It connects to ELM327 Wi-Fi adapters over TCP to provide real-time vehicle data and diagnostics.
-
-## Screenshots
-
-<img src="assets/ECUInstrumenter_000.png" width="49.5%"> <img src="assets/ECUInstrumenter_001.png" width="49.5%">
-<img src="assets/ECUInstrumenter_002.png" width="49.5%"> <img src="assets/ECUInstrumenter_003.png" width="49.5%">
-
----
+ECU Instrumenter is a native SDL2 diagnostics terminal for the Miyoo Mini Plus running OnionOS. The app is now a small C++/SDL2 project with source in `src/`.
 
 ## Features
 
-- **OBD-II Connectivity**: Wireless polling of RPM, Speed, Throttle, Coolant, Oil Temp, and AFR via ELM327.
-- **Simulator Mode**: Built-in engine simulation for testing without hardware connectivity.
-- **Data Logging**: High-efficiency logging to `history.log` in JSON-Lines format.
-- **Diagnostics**: Real-time DTC fault code reading and descriptions.
-- **System Monitoring**: Integrated log viewer with export capability.
-- **Compatibility**: Supports Miyoo Mini Plus (Python 2.7) and Desktop (Python 3.x).
+- Native SDL2 UI tuned for 640x480 handheld display.
+- Simulated OBD signal acquisition startup screen.
+- Live telemetry dashboard with RPM, latency, coolant, and voltage graphs.
+- Fault-code view with selectable local DTC clearing.
+- Raw packet monitor with pause/export support.
+- OnionOS launch/deploy path using `launch.sh` and `config.json`.
 
-## Control Scheme
+## Controls
 
-### Tab Navigation
-
-| Device | Previous Tab | Next Tab |
+| Action | Desktop Key | Miyoo Button |
 |:---|:---:|:---:|
-| Miyoo Mini Plus | L Shoulder | R Shoulder |
-| Desktop | Left Arrow | Right Arrow |
+| Navigate | Arrow keys | D-Pad |
+| Confirm / A | `z`, Space, Enter | A |
+| Back / B | `b`, Escape | B |
+| Packet shortcut / SELECT | Backspace | Select |
+| Overlay / START | Tab | Start |
+| Clear / X action | `x`, Left Shift | X |
+| Y action | `y` | Y |
 
-### Input Mapping
+## Development
 
-| Action | Miyoo Button | Desktop Key |
-|:---|:---:|:---:|
-| Confirm / Select | A | Space / Enter |
-| Cancel / Back | B | Esc / Backspace |
-| Clear Faults | X | Left Shift |
-| Clear Logs | Y | Y |
-| Navigation | D-Pad | Arrow Keys |
+Install SDL2, then build or run:
 
-## Installation and Usage
-
-### Running Locally (Development)
 ```bash
-# Install dependencies
-pip3 install pygame
-
-# Optional: Run mock server in background
-python3 mock_server.py &
-
-# Start application
+make check
 make run
 ```
 
-### Deployment to Miyoo Mini Plus
-The project includes a Makefile target for synchronizing files to the device over Wi-Fi/SSH.
+## Deployment
 
 ```bash
-# Deploy to default IP (192.168.1.53)
 make deploy
+make deploy MIYOO_IP=x.x.x.x
 ```
 
-## Architecture
+Deployment builds `bin/ecu-instrumenter` and syncs the OnionOS app bundle to `/mnt/SDCARD/App/ECUInstrumenter/`.
 
-The application is structured into three main layers:
+## Structure
 
-- **App Layer (`app.py`)**: Manages the main loop, event dispatching, and screen transitions.
-- **Core Layer (`core/`)**: Handles application state, OBD-II communication threads, and logging.
-- **UI Layer (`ui/`)**: Contains screen-specific logic, reusable widgets, and drawing helpers.
-
-Configuration for theme colors, display dimensions, and engine thresholds is centralized in `config/settings.py`.
-
-## Adding Custom PIDs
-
-New PIDs can be registered in `core/obd_client.py` within the `_setup_pid_map()` method:
-
-```python
-"01XX": {
-    "attr": "attribute_name",
-    "parser": lambda d: (int(d[0], 16) * scale_factor),
-    "expected_len": 1
-}
-```
-
-## License
-
-This project is licensed under the MIT License.
-
-```bash
-# Verify code syntax
-make check
-```
-
----
-
-### Hardware Reference
-| | | |
-|:---:|:---|:---:|
-| <img src="assets/miyoo-mini-plus.jpg" width="32"> | [Miyoo Mini Plus](https://www.amazon.com/dp/B0GCD8XKJ2/) | Handheld |
-| <img src="assets/elm327.jpg" width="32"> | [Vgate iCar Pro](https://www.amazon.de/dp/B06ZZRNYVD/) | OBD-II Adapter |
+| Path | Purpose |
+|:---|:---|
+| `src/main.cpp` | SDL2 entry point and loop |
+| `src/app_state.cpp` | Globals, drawing primitives, font/data tables |
+| `src/render.cpp` | Screens and HUD rendering |
+| `src/telemetry.cpp` | Simulated OBD/packet generation and export |
+| `src/input.cpp` | Input handling and navigation |
+| `Makefile` | C++ build, run, clean, and deploy commands |
+| `build/` | Generated object/dependency files |
+| `bin/` | Generated `ecu-instrumenter` binary |
+| `launch.sh` | OnionOS app launcher |
+| `config.json` | OnionOS app metadata |
+| `assets/icon.png` | OnionOS app icon |

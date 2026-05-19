@@ -1,4 +1,11 @@
 .DS_Store
+assets/.DS_Store
+ECUInstrumenter/
+bin/
+build/
+data/*.log
+*.o
+*.d
 ecu_log.txt
 elm.log
 history.log

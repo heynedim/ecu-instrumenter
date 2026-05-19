@@ -1,23 +1,44 @@
-.PHONY: run deploy check
+.PHONY: all run check clean deploy
+
+CXX ?= g++
+TARGET := bin/ecu-instrumenter
+SRC := src/main.cpp src/app_state.cpp src/telemetry.cpp src/render.cpp src/input.cpp
+BUILD_DIR := build
+OBJ := $(patsubst src/%.cpp,$(BUILD_DIR)/%.o,$(SRC))
+DEP := $(OBJ:.o=.d)
 
 MIYOO_IP ?= 192.168.1.53
 
-check:
-	@echo "Compiling Python files to check syntax..."
-	@python3 -m py_compile app.py mock_server.py
-	@find core ui sim models config -name "*.py" -exec python3 -m py_compile {} +
-	@echo "✅ All Python files passed syntax check!"
+CXXFLAGS ?= -std=c++11 -O2 -Wall -Wextra -pedantic -MMD -MP
+CXXFLAGS += $(shell sdl2-config --cflags)
+LDFLAGS += $(shell sdl2-config --libs) -pthread
 
-run:
-	python3 app.py
+all: $(TARGET)
 
-deploy:
-	@echo "Syncing application to Miyoo Mini using rsync..."
-	@mkdir -p ./ECUInstrumenter
-	@cp __init__.py app.py config.json settings.json launch.sh ./ECUInstrumenter/ 2>/dev/null || :
-	@cp -R assets config core models sim ui ./ECUInstrumenter/
-	@find ./ECUInstrumenter -name "*.pyc" -delete 2>/dev/null || :
+check: all
+
+$(TARGET): $(OBJ)
+	@mkdir -p bin
+	$(CXX) $(OBJ) -o $(TARGET) $(LDFLAGS)
+
+$(BUILD_DIR)/%.o: src/%.cpp
+	@mkdir -p $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+run: all
+	./$(TARGET)
+
+clean:
+	rm -rf $(BUILD_DIR) bin data
+
+deploy: check
+	@echo "Syncing ECU-INSTRUMENTER to Miyoo Mini using rsync..."
+	@mkdir -p ./ECUInstrumenter/bin ./ECUInstrumenter/data ./ECUInstrumenter/assets
+	@cp launch.sh config.json ./ECUInstrumenter/
+	@cp $(TARGET) ./ECUInstrumenter/bin/
+	@cp assets/icon.png ./ECUInstrumenter/assets/
 	@rsync -rtvzc --progress ./ECUInstrumenter/ root@$(MIYOO_IP):/mnt/SDCARD/App/ECUInstrumenter/
-	@ssh root@$(MIYOO_IP) "find /mnt/SDCARD/App/ECUInstrumenter -name '*.pyc' -delete" 2>/dev/null || :
 	@rm -rf ./ECUInstrumenter
-	@echo "\nDeployment complete! You can launch 'ECU Instrumenter' on your Miyoo Mini now."
+	@echo "Deployment complete."
+
+-include $(DEP)
